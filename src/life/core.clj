@@ -1,42 +1,57 @@
 (ns life.core
   (:use [clojure.contrib.seq-utils :only [separate]]))
 
-(defn join-neighbors [[x y] world]
+(defn- create-cells [size]
+  (let [xs (range size)
+        ys xs]
+    (for [x xs y ys]
+      {:coordinates [x y]
+       :status :alive})))
+
+(defn- neighbor-coordinates [[x y]]
   (for [xinc [-1 0 1]
         yinc [-1 0 1]
-        :when (not= xinc yinc 1)]
+        :when (not= xinc yinc 0)]
     [(+ x xinc) (+ y yinc)]))
 
-(defn neighbors-by-coordinates [world]
-  (for [{coordinates :coordinates status :status} world]
-    [coordinates {:status status}]))
+(defn- create-world [size]
+  (let [world (create-cells size)]
+    (into {}
+          (map (fn [{coordinates :coordinates :as cell}]
+                 [coordinates
+                  (assoc cell :neighbors (neighbor-coordinates coordinates))])
+               world))))
 
-(defn cells-with-neighbors [world]
-  (into {} (map (fn [[coordinates data]]
-                  [coordinates
-                   (assoc data :neighbors (join-neighbors coordinates (neighbors-by-coordinates world)))])
-                (neighbors-by-coordinates world))))
-
-(def *world* (cells-with-neighbors (create-world)))
-
-(defn neighbor-count [{coordinates :coordinates
-                       neighbors   :neighbors   :as cell}]
+(defn- neighbor-count [world {neighbors :neighbors}]
   (->> (for [neighbor neighbors]
-         (:status (get *world* neighbor)))
+         (:status (get world neighbor)))
        (filter (complement nil?))
        (separate #(= :alive %))
-       (map (juxt first count))
-       (into {})))
+       (map count)))
+
+(defn- live? [self [alive dead]]
+  (cond (<= alive 2) :dead
+        (and (= self :alive) (<= 2 alive 3)) :alive
+        (and (= self :alive) (< 3 alive)) :dead
+        (and (= self :dead) (= alive 3)) :alive))
 
 (defn tick [world]
-  (-> (for [cell world]
-        cell)
-      set))
-
-(defn create-world []
-  #{{:coordinates [0 2] :status :dead} {:coordinates [1 2] :status :dead}  {:coordinates [2 2] :status :dead}
-    {:coordinates [0 1] :status :dead} {:coordinates [1 1] :status :alive} {:coordinates [2 1] :status :dead}
-    {:coordinates [0 0] :status :dead} {:coordinates [1 0] :status :dead}  {:coordinates [2 0] :status :dead}})
+  (->> world
+       (map
+        (fn [[k v]]
+          [k
+           (assoc v :status (live? (:status v) (neighbor-count world v)))]))
+       (into {})))
 
 (defn generations []
-  (iterate tick (create-world)))
+  (iterate tick (create-world 7)))
+
+(defn draw-world [world]
+  (let [size (Math/sqrt (count world))
+        coordinates (range size)]
+    (doseq [x coordinates y coordinates]
+      (let [status (:status (get world [x y]))]
+        (if (= y (dec size))
+          (println status " ")
+          (print status " "))))
+    (println)))
