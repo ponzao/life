@@ -74,4 +74,15 @@
     (doto bg
       (.setColor Color/white)
       (.fillRect 0 0 (.getWidth img) (.getHeight img)))
-    ()))
+    (println "running!")
+    (dorun
+     (for [x (range dim) y (range dim)]
+       (render-cell bg (:status (get @generations [x y])) x y)))
+    (.drawImage g img 0 0 nil)
+    (.dispose bg)))
+
+(def panel (doto (proxy [JPanel] []
+                   (paint [g] (render g)))
+             (.setPreferredSize (Dimension. (* scale dim) (* scale dim)))))
+
+(def frame (doto (JFrame.) (.add panel) .pack .show))
