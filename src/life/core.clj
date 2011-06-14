@@ -1,5 +1,11 @@
 (ns life.core
-  (:use [clojure.contrib.seq-utils :only [separate]]))
+  (:use [clojure.contrib.seq-utils :only [separate]])
+  (:import [javax.swing JFrame JPanel JButton JLabel]
+           [java.awt GridLayout Color Graphics Dimension]
+           [java.awt.image BufferedImage]
+           [java.awt.event ActionListener]))
+
+(def dim 80)
 
 (defn- create-cells [size]
   (let [xs (range size)
@@ -44,16 +50,28 @@
            (assoc v :status (live? (:status v) (neighbor-count world v)))]))
        (into {})))
 
-(defn generations []
-  (iterate tick (create-world 7)))
+(comment (def generations (atom (create-world dim))))
 
-(defn draw-world [world]
-  (let [size (Math/sqrt (count world))
-        coordinates (range size)]
-    (doseq [x coordinates y coordinates]
-      (let [status (:status (get world [x y]))
-            character (if (= status :alive) "*" " ")]
-        (if (= y (dec size))
-          (println character "(" x y ")" " ")
-          (print character "(" x y ")" " "))))
-    (println)))
+;; The following adapted from ants.clj
+
+; Pixels per world cell
+(def scale 5)
+
+(defn fill-cell [g x y c]
+  (doto g
+    (.setColor c)
+    (.fillRect (* x scale) (* y scale) scale scale)))
+
+(defn render-cell [g status x y]
+  (if (= :alive status)
+    (fill-cell g x y (Color. 0 0 0 255))
+    (fill-cell g x y (Color. 100 100 100 255))))
+
+(defn render [g]
+  (let [img (BufferedImage. (* scale dim) (* scale dim)
+                            BufferedImage/TYPE_INT_ARGB)
+        bg (.getGraphics img)]
+    (doto bg
+      (.setColor Color/white)
+      (.fillRect 0 0 (.getWidth img) (.getHeight img)))
+    ()))
