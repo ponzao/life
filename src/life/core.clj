@@ -5,7 +5,7 @@
            [java.awt.image BufferedImage]
            [java.awt.event ActionListener]))
 
-(def dim 80)
+(def *dimension* 80)
 
 (defn- create-cells [size]
   (let [xs (range size)
@@ -50,39 +50,5 @@
            (assoc v :status (live? (:status v) (neighbor-count world v)))]))
        (into {})))
 
-(comment (def generations (atom (create-world dim))))
+(comment (def generations (atom (create-world *dimension*))))
 
-;; The following adapted from ants.clj
-
-; Pixels per world cell
-(def scale 5)
-
-(defn fill-cell [g x y c]
-  (doto g
-    (.setColor c)
-    (.fillRect (* x scale) (* y scale) scale scale)))
-
-(defn render-cell [g status x y]
-  (if (= :alive status)
-    (fill-cell g x y (Color. 0 0 0 255))
-    (fill-cell g x y (Color. 100 100 100 255))))
-
-(defn render [g]
-  (let [img (BufferedImage. (* scale dim) (* scale dim)
-                            BufferedImage/TYPE_INT_ARGB)
-        bg (.getGraphics img)]
-    (doto bg
-      (.setColor Color/white)
-      (.fillRect 0 0 (.getWidth img) (.getHeight img)))
-    (println "running!")
-    (dorun
-     (for [x (range dim) y (range dim)]
-       (render-cell bg (:status (get @generations [x y])) x y)))
-    (.drawImage g img 0 0 nil)
-    (.dispose bg)))
-
-(def panel (doto (proxy [JPanel] []
-                   (paint [g] (render g)))
-             (.setPreferredSize (Dimension. (* scale dim) (* scale dim)))))
-
-(def frame (doto (JFrame.) (.add panel) .pack .show))
