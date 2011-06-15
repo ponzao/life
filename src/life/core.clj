@@ -1,7 +1,7 @@
 (ns life.core
   (:use [clojure.contrib.seq-utils :only [separate]])
   (:import [javax.swing JFrame JPanel JButton JLabel]
-           [java.awt GridLayout Color Graphics Dimension]
+           [java.awt GridLayout Color Graphics Dimension Canvas Frame]
            [java.awt.image BufferedImage]
            [java.awt.event ActionListener]))
 
@@ -50,5 +50,19 @@
            (assoc v :status (live? (:status v) (neighbor-count world v)))]))
        (into {})))
 
-(comment (def generations (atom (create-world *dimension*))))
+(def generations (atom (create-world *dimension*)))
 
+(def *scale* 5)
+
+(def grid (proxy [Canvas] []
+            (paint [g] (let [world (swap! generations tick)]
+                        (doseq [x (range *dimension*)
+                                 y (range *dimension*)]
+                           (let [alive? (= :alive (:status (get world [x y])))]
+                             (when (and alive? (= x y))
+                               (.fillRect g (+ *scale* x) (+ *scale* y) *scale* *scale*))))))))
+
+(def frame (doto (JFrame.)
+             (.add grid)
+             (.setSize 640 480)
+             (.setVisible true)))
