@@ -5,7 +5,7 @@
            [java.awt.image BufferedImage]
            [java.awt.event ActionListener]))
 
-(def *dimension* 80)
+(def *dimension* 40)
 
 (defn- create-cells [size]
   (let [xs (range size)
@@ -56,13 +56,22 @@
 
 (def grid (proxy [Canvas] []
             (paint [g] (let [world (swap! generations tick)]
-                        (doseq [x (range *dimension*)
+                         (.setSize this 640 480)
+                         (doseq [x (range *dimension*)
                                  y (range *dimension*)]
                            (let [alive? (= :alive (:status (get world [x y])))]
-                             (when (and alive? (= x y))
-                               (.fillRect g (+ *scale* x) (+ *scale* y) *scale* *scale*))))))))
+                             (when (and alive?)
+                               (.fillRect g (* x *scale*) (* y *scale*) *scale* *scale*))))))))
 
 (def frame (doto (JFrame.)
              (.add grid)
              (.setSize 640 480)
              (.setVisible true)))
+
+(def refresh (atom 0))
+
+(loop []
+  (Thread/sleep @refresh)
+  (.repaint grid)
+  (recur))
+
